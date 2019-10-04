@@ -1,0 +1,92 @@
+13:04:08 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:04:13 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:04:24 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:04:46 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:04:51 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:04:56 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:05:00 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:05:07 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:05:27 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:34:13 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+Building file: ../src/Ensc351Part1.cpp
+Invoking: Cross G++ Compiler
+powerpc-linux-gnu-g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Ensc351Part1.d" -MT"src/Ensc351Part1.o" -o "src/Ensc351Part1.o" "../src/Ensc351Part1.cpp"
+Finished building: ../src/Ensc351Part1.cpp
+ 
+Building file: ../src/PeerX.cpp
+Invoking: Cross G++ Compiler
+powerpc-linux-gnu-g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/PeerX.d" -MT"src/PeerX.o" -o "src/PeerX.o" "../src/PeerX.cpp"
+Finished building: ../src/PeerX.cpp
+ 
+Building file: ../src/SenderX.cpp
+Invoking: Cross G++ Compiler
+powerpc-linux-gnu-g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/SenderX.d" -MT"src/SenderX.o" -o "src/SenderX.o" "../src/SenderX.cpp"
+Finished building: ../src/SenderX.cpp
+ 
+Building target: Ensc351Part1
+Invoking: Cross G++ Linker
+powerpc-linux-gnu-g++ -static -o "Ensc351Part1"  ./src/Ensc351Part1.o ./src/PeerX.o ./src/SenderX.o ./src/myIO.o   
+Finished building target: Ensc351Part1
+ 
+13:34:25 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:35:00 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+Building file: ../src/Ensc351Part1.cpp
+Invoking: GCC C++ Compiler
+g++ -std=c++1y -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/Ensc351Part1.d" -MT"src/Ensc351Part1.o" -o "src/Ensc351Part1.o" "../src/Ensc351Part1.cpp"
+Finished building: ../src/Ensc351Part1.cpp
+ 
+Building file: ../src/PeerX.cpp
+Invoking: GCC C++ Compiler
+g++ -std=c++1y -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/PeerX.d" -MT"src/PeerX.o" -o "src/PeerX.o" "../src/PeerX.cpp"
+Finished building: ../src/PeerX.cpp
+ 
+Building file: ../src/SenderX.cpp
+Invoking: GCC C++ Compiler
+g++ -std=c++1y -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"src/SenderX.d" -MT"src/SenderX.o" -o "src/SenderX.o" "../src/SenderX.cpp"
+Finished building: ../src/SenderX.cpp
+ 
+Building target: Ensc351Part1
+Invoking: GCC C++ Linker
+g++  -o "Ensc351Part1"  ./src/Ensc351Part1.o ./src/PeerX.o ./src/SenderX.o ./src/myIO.o   
+Finished building target: Ensc351Part1
+ 
+13:35:04 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:35:11 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:35:15 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:35:17 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:36:03 **** Incremental Build of configuration Debug for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
+13:36:08 **** Incremental Build of configuration TestPpc for project Ensc351Part1 ****
+make all 
+make: Nothing to be done for 'all'.
