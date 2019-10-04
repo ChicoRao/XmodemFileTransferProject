@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;Ensc351Part2/src/Ensc351Part2.cpp&apos; to &apos;Ensc351Part2-renamed-main.cpp&apos;" description="Rename resource &apos;Ensc351Part2.cpp&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/Ensc351Part2.cpp" name="Ensc351Part2-renamed-main.cpp" stamp="1569962807150" updateReferences="true"/>
+</session>

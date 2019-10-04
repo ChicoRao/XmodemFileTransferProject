@@ -1,0 +1,372 @@
+//============================================================================
+//
+//% Student Name 1: Rico Chao
+//% Student 1 #: 301310624
+//% Student 1 userid (email): rchao (rchao@sfu.ca)
+//
+//% Student Name 2: Reed Lu
+//% Student 2 #: 301289044
+//% Student 2 userid (email): reedl (reedl@sfu.ca)
+//
+//% Below, edit to list any people who helped you with the code in this file,
+//%      or put 'None' if nobody helped (the two of) you.
+//
+// Helpers: _TA__
+//
+// Also, list any resources beyond the course textbooks and the course pages on Piazza
+// that you used in making your submission.
+//
+// Resources:  ___________
+//
+//%% Instructions:
+//% * Put your name(s), student number(s), userid(s) in the above section.
+//% * Also enter the above information in other files to submit.
+//% * Edit the "Helpers" line and, if necessary, the "Resources" line.
+//% * Your group name should be "P2_<userid1>_<userid2>" (eg. P2_stu1_stu2)
+//% * Form groups as described at:  https://courses.cs.sfu.ca/docs/students
+//% * Submit files to courses.cs.sfu.ca
+//
+// File Name   : ReceiverX.cpp
+// Version     : September 3rd, 2019
+// Description : Starting point for ENSC 351 Project Part 2
+// Original portions Copyright (c) 2019 Craig Scratchley  (wcs AT sfu DOT ca)
+//============================================================================
+
+#include <string.h> // for memset()
+#include <fcntl.h>
+#include <stdint.h>
+#include <iostream>
+#include "myIO.h"
+#include "ReceiverX.h"
+#include "VNPE.h"
+
+//using namespace std;
+
+enum {START_R, EOT1_R, CAN_R, EXIT_R};
+int rstate = START_R;
+
+int EOTCnt;
+
+ReceiverX::
+ReceiverX(int d, const char *fname, bool useCrc)
+:PeerX(d, fname, useCrc),
+NCGbyte(useCrc ? 'C' : NAK),
+goodBlk(false),
+goodBlk1st(false),
+syncLoss(true),
+numLastGoodBlk(0)
+{
+}
+
+void ReceiverX::receiveFile()
+{
+	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+	transferringFileD = PE2(myCreat(fileName, mode), fileName);
+
+	// ***** improve this member function *****
+
+	// below is just an example template.  You can follow a
+	// 	different structure if you want.
+
+	// inform sender that the receiver is ready and that the
+	//		sender can send the first block
+
+	sendByte(NCGbyte);
+
+	//20190927
+	numLastGoodBlk = 0;
+
+
+	errCnt = 0;
+
+		while (rstate != EXIT_R) {
+				PE_NOT(myRead(mediumD, rcvBlk, 1), 1);
+
+				switch(rstate) {
+					case START_R: {
+						if (rcvBlk[0] == SOH) {
+							getRestBlk();
+
+							std::cout << "START_R" << std::endl;
+
+							if(!goodBlk1st) {
+								errCnt++;
+							}else {
+								errCnt = 0;
+							}
+
+							if(syncLoss) {
+								can8();
+								result = "SyncLoss Problem";
+								rstate = EXIT_R;
+								break;
+							}
+
+							if(errCnt < errB) {
+								can8();
+								result = "MoreThanMaxErrorCount";
+								rstate = EXIT_R;
+								break;
+							}
+
+							if (goodBlk) {
+								sendByte(ACK); // assume the expected block was received correctly
+
+								if(goodBlk1st) {
+									writeChunk();
+								}
+							}else {
+								sendByte(NAK);
+							}
+
+							rstate = START_R;
+						}else if (rcvBlk[0] == EOT) {
+							sendByte(NAK); // NAK the first EOT
+							rstate = EOT1_R;
+						}else if (rcvBlk[0] == CAN) {
+							rstate = CAN_R;
+						}
+						break;
+					}
+					case EOT1_R: {
+
+						std::cout << "EOT1_R" << std::endl;
+
+						if(rcvBlk[0] == EOT){
+							sendByte(ACK);
+							result = "Done";
+							rstate = EXIT_R;
+						}
+						break;
+					}
+					case CAN_R: {
+
+						std::cout << "CAN_R" << std::endl;
+
+						result = "SendCancelled";
+						rstate = EXIT_R;
+						break;
+					}
+					case EXIT_R: {
+						break;
+					}
+				}
+		}
+//
+//		if(close(transferringFileD)) {
+//				result = "Done";
+//				sendByte(ACK);
+//			}
+
+
+	//-----------------------------------------
+
+
+//	EOTCnt = 0;
+//
+//	std::cout << "Receive1" << std::endl;
+//
+//
+//	while(rstate != EXIT_R) {
+//
+//		PE_NOT(myRead(mediumD, rcvBlk, 1), 1);
+//
+//		std::cout << "Receive2" << rcvBlk[0] << std::endl;
+//
+//		switch(rstate) {
+//			case START_R: {
+//
+//				if(rcvBlk[0] == SOH) {
+//					getRestBlk();
+//
+//					std::cout << "Receive3" << rcvBlk[0] << std::endl;
+//
+//					if(goodBlk) {
+//						sendByte(ACK); // assume the expected block was received correctly.
+//
+//						std::cout << "Receive4" << rcvBlk[0] << std::endl;
+//
+//						writeChunk();
+//					}else {
+//						std::cout << "Receive5" << rcvBlk[0] << std::endl;
+//
+//						sendByte(NAK);
+//						errCnt++;
+//					}
+//					rstate = START_R;
+//				}else if (rcvBlk[0] == EOT) {
+//					sendByte(NAK);
+//					EOTCnt++;
+//					rstate = EOT1_R;
+//				}else if (rcvBlk[0] == CAN) {
+//					rstate = CAN_R;
+//				}
+//
+//				break;
+//			}
+//			case EOT1_R: {
+//
+//				std::cout << "Receive7" << rcvBlk[0] << std::endl;
+//
+//				//if(EOTCnt == 1) {
+//					sendByte(ACK);
+//					EOTCnt = 0;
+//					rstate = EXIT_R;
+//				//}
+//
+//				break;
+//			}
+//			case CAN_R: {
+//
+//				std::cout << "Receive6" << rcvBlk[0] << std::endl;
+//
+//				can8();
+//				result = "Done";
+//
+//				rstate = EXIT_R;
+//
+//				break;
+//			}
+//			case EXIT_R: {
+////				result = "Done";
+//
+//				break;
+//			}
+//		}
+//	}
+//
+//	if(close(transferringFileD)) {
+//		result = "Done";
+//		sendByte(ACK);
+//	}
+//
+
+
+
+	//-------------------------------------
+
+//	while(PE_NOT(myRead(mediumD, rcvBlk, 1), 1), (rcvBlk[0] == SOH))
+//	{
+//		getRestBlk();
+//		sendByte(ACK); // assume the expected block was received correctly.
+//		writeChunk();
+//	};
+//
+//	// assume EOT was just read in the condition for the while loop
+//	sendByte(NAK); // NAK the first EOT
+//	PE_NOT(myRead(mediumD, rcvBlk, 1), 1); // presumably read in another EOT
+//	(close(transferringFileD));
+//	// check if the file closed properly.  If not, result should be something other than "Done".
+//	result = "Done"; //assume the file closed properly.
+//	sendByte(ACK); // ACK the second EOT
+}
+
+/* Only called after an SOH character has been received.
+The function tries
+to receive the remaining characters to form a complete
+block.  The member
+variable goodBlk1st will be made true if this is the first
+time that the block was received in "good" condition.
+*/
+void ReceiverX::getRestBlk()
+{
+	// ********* this function must be improved ***********
+	//20190926
+	if(Crcflg) {
+		PE_NOT(myReadcond(mediumD, &rcvBlk[1], REST_BLK_SZ_CRC, REST_BLK_SZ_CRC, 0, 0), REST_BLK_SZ_CRC);
+	}else {
+		PE_NOT(myReadcond(mediumD, &rcvBlk[1], REST_BLK_SZ_CS, REST_BLK_SZ_CS, 0, 0), REST_BLK_SZ_CS);
+	}
+
+
+	if (rcvBlk[1] + rcvBlk[2] == 255){
+		//check to see if blk# and its 1s comp add up to 255
+
+		std::cout << "check11" << std::endl;
+
+		goodBlk = true;
+	}else {
+
+		COUT << "check12" << std::endl;
+
+		goodBlk = false;
+		goodBlk1st = false;
+		syncLoss = false;
+		return;
+	}
+
+	if (rcvBlk[1] == (uint8_t) (numLastGoodBlk+1)){
+		//check to see if the block# is good
+
+		std::cout << "check21" << std::endl;
+
+		goodBlk = true;
+		goodBlk1st = true;
+		syncLoss = false;
+	}else {
+
+		std::cout << "check22" << std::endl;
+
+		if(rcvBlk[1] != numLastGoodBlk){
+			//check to see if blk# sent is the same as previous one (both good)
+			goodBlk1st = false;
+			goodBlk = false;
+			syncLoss = true;	//Number possibly out of range or not consecutive
+		}else {
+			goodBlk1st = false;
+			goodBlk = true;
+			syncLoss = false;
+		}
+
+		return;
+	}
+
+	if(Crcflg){
+
+		std::cout << "check31" << std::endl;
+
+		uint16_t checkCrc = 0;
+		crc16ns(&checkCrc, &rcvBlk[3]);
+		if(checkCrc != *(uint16_t*) &rcvBlk[PAST_CHUNK]){
+			goodBlk = false;
+			goodBlk1st = false;
+			return;
+		}
+	}else {
+
+		std::cout << "check32" << std::endl;
+
+		uint8_t sum = 0;
+		for (int i = 0; i < CHUNK_SZ+3; i++){
+			sum += rcvBlk[i+3];
+		}
+
+		if (sum != rcvBlk[PAST_CHUNK]) {
+			goodBlk = false;
+			goodBlk1st = false;
+			return;
+		}
+	}
+
+	//numLastGoodBlk++;
+	numLastGoodBlk = rcvBlk[1];	//or even this where blk number is assigned to a good first blk
+
+}
+
+//Write chunk (data) in a received block to disk
+void ReceiverX::writeChunk()
+{
+	PE_NOT(write(transferringFileD, &rcvBlk[DATA_POS], CHUNK_SZ), CHUNK_SZ);
+}
+
+//Send 8 CAN characters in a row to the XMODEM sender, to inform it of
+//	the cancelling of a file transfer
+void ReceiverX::can8()
+{
+	// no need to space CAN chars coming from receiver in time
+    char buffer[CAN_LEN];
+    memset( buffer, CAN, CAN_LEN);
+    PE_NOT(myWrite(mediumD, buffer, CAN_LEN), CAN_LEN);
+}
+
+
