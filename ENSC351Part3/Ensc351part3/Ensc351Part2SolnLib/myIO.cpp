@@ -11,7 +11,7 @@
 //% Below, edit to list any people who helped you with the code in this file,
 //%      or put 'None' if nobody helped (the two of) you.
 //
-// Helpers: _everybody helped us/me with the assignment (list names or put 'None')__
+// Helpers: _TA__
 //
 // Also, list any resources beyond the course textbooks and the course pages on Piazza
 // that you used in making your submission.
@@ -43,63 +43,171 @@
 
 using namespace std;
 
+int dataCountStore;	//Used to consider myReadcond
+
 class Socket {
 
 private:
-
-	condition_variable socketCV;
-	mutable mutex socketMutex;
-	int dataCount;
+	mutex socketMutex;
+	condition_variable socketCVDrain;
+	condition_variable socketCVRead;
+	int dataCount = 0;
 	int pair;
 	bool boolFile;
 
 public:
 
+	Socket()
+	{
+		boolFile = true;
+		cout << "Created file" << endl;
+	}
 
 	Socket(int pair)
 	{
-		lock_guard<mutex> lk(socketMutex);
 		this->pair = pair;
 		dataCount = 0;
 		boolFile = false;
-		cout << "Created socket" << endl;
 	}
 
-	int setDataCount(ssize_t dataCount)
+	int setDataCount(int descriptor, const void* buffer, size_t nbyte)
 	{
-		lock_guard<mutex> lk(socketMutex);
-		this->dataCount += dataCount;
-		socketCV.notify_all();
+		lock_guard<mutex> slk(socketMutex);
 
-		return this->dataCount;
+		int temp = write(descriptor, buffer, nbyte);
+
+		dataCount += temp;
+
+		//cout << "setDataCount write: " << temp << " to dataCount: " << dataCount << endl;
+
+		if(dataCount >= 0)
+		{
+			socketCVRead.notify_one();
+		}
+
+		//cout << "function setDataCount: " << dataCount << endl;
+
+		return temp;
 	}
 
 	bool isFile() {
-		lock_guard<mutex> lk(socketMutex);
+		lock_guard<mutex> slk(socketMutex);
 		return boolFile == true;
 	}
 
-	void drain()
+	void drain(unique_lock<mutex>& vectorLock)
 	{
-		unique_lock<mutex> lk(socketMutex);
-		socketCV.wait(lk,[this]{return dataCount == 0;});
+		unique_lock<mutex> slk(socketMutex);
+
+		vectorLock.unlock();
+
+		if(dataCount > 0)
+		{
+			//socketCVDrain.wait(slk,[this]{cout << "waiting for dataCount is 0" << endl; return dataCount == 0;});
+			socketCVDrain.wait(slk,[this]{return dataCount <= 0;});
+		}
 	}
 
-	void readDrain(int readData) {
-		lock_guard<mutex> lk(socketMutex);
+	int readCond(int des, void * buf, int n, int min, int time, int timeout)
+	{
+		unique_lock<mutex> slk(socketMutex);
 
-		dataCount -= readData;
+		//cout << "inside function readCond" << endl;
 
-		socketCV.notify_all();
+		int readData;
+
+		if(dataCount < min)
+		{
+			//cout << "dataCount: " << dataCount << " smaller than min: " << min << endl;
+
+			dataCount -= min;
+
+			if(dataCount <= 0)
+			{
+				socketCVDrain.notify_all();
+			}
+
+			socketCVRead.wait(slk,[this]{return (dataCount) >= 0;});
+
+			readData = wcsReadcond(des, buf, n, min, time, timeout );
+
+			//cout << "readData: " << readData << endl;
+
+			if(readData != -1)
+			{
+				dataCount -= (readData - min);
+			}
+			else {
+				dataCount += min;
+			}
+		}
+		else
+		{
+			//cout << "dataCount4: " << dataCount << " greater or equal to min: " << min << endl;
+
+			//reading after the wait
+			readData = wcsReadcond(des, buf, n, min, time, timeout );
+
+			//cout << "readData2: " << readData << endl;
+
+			//subtracting readData from dataCount
+			if(dataCount > 0)
+			{
+				dataCount -= readData;
+
+				//cout << "dataCount5: " << dataCount << endl;
+
+				if(!dataCount)
+				{
+					socketCVDrain.notify_all();
+				}
+			}
+		}
+		return readData;
 	}
+
+	int getPair()
+	{
+		return pair;
+	}
+
+	void setPair(int pairNum)
+	{
+		lock_guard<mutex> slk(socketMutex);
+		pair = pairNum;
+	}
+
+	void checkClose()
+	{
+		lock_guard<mutex> slk(socketMutex);
+
+		cout << "dataCount when closing " << dataCount << endl;
+
+		if(dataCount > 0)
+		{
+			socketCVDrain.notify_all();
+		}
+		else if(dataCount < 0)
+		{
+			socketCVDrain.notify_one();
+		}
+	}
+
 };
 
 vector<Socket*> vectorSocket;
 mutex vectorMutex;
 
+//Creates the socketpair
 int mySocketpair( int domain, int type, int protocol, int des[2] )
 {
-	lock_guard<mutex> lk(vectorMutex);
+	lock_guard<mutex> vlk(vectorMutex);
+	int returnVal = socketpair(domain, type, protocol, des);
+
+	if(returnVal == -1)
+	{
+		return returnVal;
+	}
 
 	if(vectorSocket.size() <= des[0])
 	{
@@ -115,69 +223,136 @@ int mySocketpair( int domain, int type, int protocol, int des[2] )
 
 	vectorSocket[des[1]] = new Socket(des[0]);
 
-	cout << "Hello" << endl;
-
-	int returnVal = socketpair(domain, type, protocol, des);
 	return returnVal;
 }
 
 //Open the file to read
 int myOpen(const char *pathname, int flags, mode_t mode)
 {
-	lock_guard<mutex> lk(vectorMutex);
+	lock_guard<mutex> vlk(vectorMutex);
 
-	return open(pathname, flags, mode);
+	cout << "Hello myOpen" << endl;
+
+	int temp = open(pathname, flags, mode);
+
+	//For myOpen, also need to store in vector, but as isFile, so it is not socket
+	if(vectorSocket.size() <= temp)
+	{
+		vectorSocket.resize(temp+1);
+	}
+
+	//Create new socket object but make isFile true
+	vectorSocket[temp] = new Socket;
+
+	return temp;
 }
 
 //Creates the output file to write into
 int myCreat(const char *pathname, mode_t mode)
 {
-	lock_guard<mutex> lk(vectorMutex);
+	lock_guard<mutex> vlk(vectorMutex);
 
-	return creat(pathname, mode);
+	cout << "Hello myCreat" << endl;
+
+	int temp = creat(pathname, mode);
+
+	//For myCreat, also need to store in vector, but as file
+	if(vectorSocket.size() <= temp)
+	{
+		vectorSocket.resize(temp+1);
+	}
+
+	//Create new socket object but make isFile true
+	vectorSocket[temp] = new Socket;
+
+	return temp;
 }
 
 //Write into the output file or socket
 ssize_t myWrite( int fildes, const void* buf, size_t nbyte )
 {
-	lock_guard<mutex> lk(vectorMutex);
+	unique_lock<mutex> vlk(vectorMutex);
 
-	if(vectorSocket[fildes]->isFile())
+	int pairDes = vectorSocket[fildes]->getPair();
+
+	if(vectorSocket[pairDes]->isFile())
 	{
-		return write(fildes, buf, nbyte);
+		cout << "Writing into file" << endl;
+
+		return write(pairDes, buf, nbyte);
 	}
 	else
 	{
 		//socket
-		int tempDataCount = vectorSocket[fildes]->setDataCount(write(fildes, buf, nbyte));;
-		return tempDataCount;
+		int totalWrite = vectorSocket[pairDes]->setDataCount(fildes, buf, nbyte);
+
+		cout << "Writing into socket" << endl;
+
+		return totalWrite;
 	}
+
 }
 
 //Close the open files or socket
 int myClose( int fd )
 {
-	lock_guard<mutex> lk(vectorMutex);
+	//Returns 0 if successfully closed, -1 if error
+
+	lock_guard<mutex> vlk(vectorMutex);
+
+	cout << "Hello myClose" << endl;
 
 	if(vectorSocket[fd]->isFile())	//Checks if the vector index contains a socket or file
 	{
+		delete vectorSocket[fd];
+
+		vectorSocket[fd] = nullptr;
+
 		return close(fd);
+
 	}
 	else
 	{
 		//clear socket data
+		cout << "Closing socket" << endl;
+
+		//See if we have to call checkClose before closing sockets
+		vectorSocket[fd]->checkClose();
+
+		vectorSocket[vectorSocket[fd]->getPair()]->checkClose();
+
+		vectorSocket[fd]->setPair(-1);
+
+		vectorSocket[vectorSocket[fd]->getPair()]->setPair(-1);
+
+		delete vectorSocket[fd];
+
+		delete vectorSocket[vectorSocket[fd]->getPair()];
+
+		vectorSocket[fd] = nullptr;
+
+		vectorSocket[vectorSocket[fd]->getPair()] = nullptr;
 
 		return close(fd);
-
 	}
+
 }
 
+//Tcdrain waits for something to be read GOOD?
 int myTcdrain(int des)
 { //is also included for purposes of the course.
 
-	lock_guard<mutex> lk(vectorMutex);
+	unique_lock<mutex> vlk(vectorMutex);
 
-	vectorSocket[des]->drain();
+	//cout << "Enter Tcdrain" << endl;
+
+	if(vectorSocket[des]->getPair() != -1)
+	{
+		//cout << "Socket Tcdrain" << endl;
+
+		vectorSocket[vectorSocket[des]->getPair()]->drain(vlk);
+
+	}
 
 	return 0;
 }
@@ -188,23 +363,24 @@ int myTcdrain(int des)
  *  */
 int myReadcond(int des, void * buf, int n, int min, int time, int timeout)
 {
-	lock_guard<mutex> lk(vectorMutex);
+	//cout << "Socket reading" << endl;
 
-	int tempReadcond = wcsReadcond(des, buf, n, min, time, timeout );
+	int totalDataRead = vectorSocket[des]->readCond(des, buf, n, min, time, timeout);
 
-	vectorSocket[des]->readDrain(tempReadcond);
-
-	return wcsReadcond(des, buf, n, min, time, timeout );
+	return totalDataRead;
 }
 
 //Read from input file
 ssize_t myRead( int des, void* buf, size_t nbyte )
 {
-	lock_guard<mutex> lk(vectorMutex);
 	// deal with reading from descriptors for files
+
+	//cout << "Enter myRead" << endl;
 
 	if(vectorSocket[des]->isFile())
 	{
+		//cout << "File reading" << endl;
+
 		return read(des, buf, nbyte);
 	}
 	else
@@ -213,4 +389,10 @@ ssize_t myRead( int des, void* buf, size_t nbyte )
 		return myReadcond(des, buf, nbyte, 1, 0, 0);
 	}
 }
+
+
+
+
+
+
 

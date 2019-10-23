@@ -41,13 +41,13 @@ endif
 all: Ensc351Part2HandCoded
 
 dependents:
-	-cd /mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug && $(MAKE) all
+	-cd /mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug && $(MAKE) clean all
 
 # Tool invocations
 Ensc351Part2HandCoded: $(OBJS) $(USER_OBJS) /mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug/libEnsc351Part2SolnLib.a
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -L"/mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351/Debug" -L"/mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug" -o "Ensc351Part2HandCoded" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L"/mnt/hgfs/VMsf/Ensc351/Debug" -L"/mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug" -o "Ensc351Part2HandCoded" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
