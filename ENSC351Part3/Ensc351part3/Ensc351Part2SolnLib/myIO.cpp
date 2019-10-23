@@ -40,10 +40,9 @@
 #include <mutex>
 #include <condition_variable>
 #include <vector>
+#include <thread>
 
 using namespace std;
-
-int dataCountStore;	//Used to consider myReadcond
 
 class Socket {
 
@@ -60,6 +59,7 @@ public:
 	Socket()
 	{
 		boolFile = true;
+		pair = -1;
 		cout << "Created file" << endl;
 	}
 
@@ -78,20 +78,15 @@ public:
 
 		dataCount += temp;
 
-		//cout << "setDataCount write: " << temp << " to dataCount: " << dataCount << endl;
-
 		if(dataCount >= 0)
 		{
 			socketCVRead.notify_one();
 		}
 
-		//cout << "function setDataCount: " << dataCount << endl;
-
 		return temp;
 	}
 
 	bool isFile() {
-		lock_guard<mutex> slk(socketMutex);
 		return boolFile == true;
 	}
 
@@ -101,25 +96,17 @@ public:
 
 		vectorLock.unlock();
 
-		if(dataCount > 0)
-		{
-			//socketCVDrain.wait(slk,[this]{cout << "waiting for dataCount is 0" << endl; return dataCount == 0;});
-			socketCVDrain.wait(slk,[this]{return dataCount <= 0;});
-		}
+		socketCVDrain.wait(slk,[this]{return dataCount <= 0;});
 	}
 
 	int readCond(int des, void * buf, int n, int min, int time, int timeout)
 	{
 		unique_lock<mutex> slk(socketMutex);
 
-		//cout << "inside function readCond" << endl;
-
 		int readData;
 
 		if(dataCount < min)
 		{
-			//cout << "dataCount: " << dataCount << " smaller than min: " << min << endl;
-
 			dataCount -= min;
 
 			if(dataCount <= 0)
@@ -127,11 +114,9 @@ public:
 				socketCVDrain.notify_all();
 			}
 
-			socketCVRead.wait(slk,[this]{return (dataCount) >= 0;});
+			socketCVRead.wait(slk,[this]{return dataCount >= 0;});
 
-			readData = wcsReadcond(des, buf, n, min, time, timeout );
-
-			//cout << "readData: " << readData << endl;
+			readData = wcsReadcond(des, buf, n, min, time, timeout);
 
 			if(readData != -1)
 			{
@@ -143,19 +128,13 @@ public:
 		}
 		else
 		{
-			//cout << "dataCount4: " << dataCount << " greater or equal to min: " << min << endl;
-
 			//reading after the wait
 			readData = wcsReadcond(des, buf, n, min, time, timeout );
-
-			//cout << "readData2: " << readData << endl;
 
 			//subtracting readData from dataCount
 			if(dataCount > 0)
 			{
 				dataCount -= readData;
-
-				//cout << "dataCount5: " << dataCount << endl;
 
 				if(!dataCount)
 				{
@@ -177,22 +156,23 @@ public:
 		pair = pairNum;
 	}
 
-	void checkClose()
+	bool checkClose()
 	{
 		lock_guard<mutex> slk(socketMutex);
 
-		cout << "dataCount when closing " << dataCount << endl;
-
 		if(dataCount > 0)
 		{
+			dataCount = 0;
 			socketCVDrain.notify_all();
 		}
 		else if(dataCount < 0)
 		{
-			socketCVDrain.notify_one();
+			dataCount = 0;
+			socketCVRead.notify_one();
 		}
-	}
 
+		return true;	//Returns true to show that it is done checking
+	}
 };
 
 vector<Socket*> vectorSocket;
@@ -231,8 +211,6 @@ int myOpen(const char *pathname, int flags, mode_t mode)
 {
 	lock_guard<mutex> vlk(vectorMutex);
 
-	cout << "Hello myOpen" << endl;
-
 	int temp = open(pathname, flags, mode);
 
 	//For myOpen, also need to store in vector, but as isFile, so it is not socket
@@ -251,8 +229,6 @@ int myOpen(const char *pathname, int flags, mode_t mode)
 int myCreat(const char *pathname, mode_t mode)
 {
 	lock_guard<mutex> vlk(vectorMutex);
-
-	cout << "Hello myCreat" << endl;
 
 	int temp = creat(pathname, mode);
 
@@ -277,16 +253,13 @@ ssize_t myWrite( int fildes, const void* buf, size_t nbyte )
 
 	if(vectorSocket[pairDes]->isFile())
 	{
-		cout << "Writing into file" << endl;
 
-		return write(pairDes, buf, nbyte);
+		return write(fildes, buf, nbyte);
 	}
 	else
 	{
 		//socket
 		int totalWrite = vectorSocket[pairDes]->setDataCount(fildes, buf, nbyte);
-
-		cout << "Writing into socket" << endl;
 
 		return totalWrite;
 	}
@@ -297,10 +270,7 @@ ssize_t myWrite( int fildes, const void* buf, size_t nbyte )
 int myClose( int fd )
 {
 	//Returns 0 if successfully closed, -1 if error
-
-	lock_guard<mutex> vlk(vectorMutex);
-
-	cout << "Hello myClose" << endl;
+	unique_lock<mutex> vlk(vectorMutex);
 
 	if(vectorSocket[fd]->isFile())	//Checks if the vector index contains a socket or file
 	{
@@ -309,33 +279,29 @@ int myClose( int fd )
 		vectorSocket[fd] = nullptr;
 
 		return close(fd);
-
 	}
 	else
 	{
 		//clear socket data
-		cout << "Closing socket" << endl;
 
-		//See if we have to call checkClose before closing sockets
-		vectorSocket[fd]->checkClose();
+		int temp = close(fd);
 
-		vectorSocket[vectorSocket[fd]->getPair()]->checkClose();
+		bool check = false;
+		bool checkPair = false;
 
-		vectorSocket[fd]->setPair(-1);
+		check = vectorSocket[fd]->checkClose();	//Returns true when it is done checking
 
-		vectorSocket[vectorSocket[fd]->getPair()]->setPair(-1);
+		checkPair = vectorSocket[vectorSocket[fd]->getPair()]->checkClose();	//Returns true when it is done checking for the pair
 
-		delete vectorSocket[fd];
+		while(!(check && checkPair))	//Deletes the vector socket when it finishes checkClose for both itself and its pair
+		{
+			delete vectorSocket[fd];
 
-		delete vectorSocket[vectorSocket[fd]->getPair()];
+			vectorSocket[fd] = nullptr;
+		}
 
-		vectorSocket[fd] = nullptr;
-
-		vectorSocket[vectorSocket[fd]->getPair()] = nullptr;
-
-		return close(fd);
+		return temp;
 	}
-
 }
 
 //Tcdrain waits for something to be read GOOD?
@@ -344,14 +310,9 @@ int myTcdrain(int des)
 
 	unique_lock<mutex> vlk(vectorMutex);
 
-	//cout << "Enter Tcdrain" << endl;
-
 	if(vectorSocket[des]->getPair() != -1)
 	{
-		//cout << "Socket Tcdrain" << endl;
-
 		vectorSocket[vectorSocket[des]->getPair()]->drain(vlk);
-
 	}
 
 	return 0;
@@ -363,8 +324,6 @@ int myTcdrain(int des)
  *  */
 int myReadcond(int des, void * buf, int n, int min, int time, int timeout)
 {
-	//cout << "Socket reading" << endl;
-
 	int totalDataRead = vectorSocket[des]->readCond(des, buf, n, min, time, timeout);
 
 	return totalDataRead;
@@ -375,12 +334,8 @@ ssize_t myRead( int des, void* buf, size_t nbyte )
 {
 	// deal with reading from descriptors for files
 
-	//cout << "Enter myRead" << endl;
-
 	if(vectorSocket[des]->isFile())
 	{
-		//cout << "File reading" << endl;
-
 		return read(des, buf, nbyte);
 	}
 	else
@@ -389,6 +344,7 @@ ssize_t myRead( int des, void* buf, size_t nbyte )
 		return myReadcond(des, buf, nbyte, 1, 0, 0);
 	}
 }
+
 
 
 
