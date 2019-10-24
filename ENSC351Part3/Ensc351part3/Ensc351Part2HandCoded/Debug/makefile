@@ -41,7 +41,7 @@ endif
 all: Ensc351Part2HandCoded
 
 dependents:
-	-cd /mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug && $(MAKE) all
+	-cd /mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug && $(MAKE) clean all
 
 # Tool invocations
 Ensc351Part2HandCoded: $(OBJS) $(USER_OBJS) /mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part3/Ensc351part3/Ensc351Part2SolnLib/Debug/libEnsc351Part2SolnLib.a

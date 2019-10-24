@@ -81,7 +81,7 @@ void ReceiverX::getRestBlk()
 				COUT << "(s" << (unsigned) rcvBlk[1] << ":" << (unsigned) numLastGoodBlk << ")" << flush;
 				return;
 			}
-#define ALLOW_DEEMED_GOOD
+//#define ALLOW_DEEMED_GOOD
 #ifdef ALLOW_DEEMED_GOOD
 			else { // (rcvBlk[1] == numLastGoodBlk)
 				goodBlk = true; // "deemed" good block
@@ -102,12 +102,12 @@ void ReceiverX::getRestBlk()
 			checksum(&sum, rcvBlk);
 			goodBlk = (rcvBlk[PAST_CHUNK] == sum);
 		}
-#ifndef ALLOW_DEEMED_GOOD
 		if (!goodBlk) {
 			goodBlk1st = false; // but the block was "bad".
 			COUT << "(b" << (unsigned) rcvBlk[1] << ")" << flush;
 			return;
 		}
+#ifndef ALLOW_DEEMED_GOOD
 		else if (!goodBlk1st) {
 			COUT << "(r" << (unsigned) rcvBlk[1] << ")" << flush; // "resent" good block
 			return;

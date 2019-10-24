@@ -150,12 +150,6 @@ public:
 		return pair;
 	}
 
-	void setPair(int pairNum)
-	{
-		lock_guard<mutex> slk(socketMutex);
-		pair = pairNum;
-	}
-
 	bool checkClose()
 	{
 		lock_guard<mutex> slk(socketMutex);
@@ -251,19 +245,18 @@ ssize_t myWrite( int fildes, const void* buf, size_t nbyte )
 
 	int pairDes = vectorSocket[fildes]->getPair();
 
-	if(vectorSocket[pairDes]->isFile())
+	if(pairDes == -1)
 	{
-
 		return write(fildes, buf, nbyte);
 	}
-	else
+
+	if(!(vectorSocket[pairDes]->isFile()))
 	{
 		//socket
 		int totalWrite = vectorSocket[pairDes]->setDataCount(fildes, buf, nbyte);
 
 		return totalWrite;
 	}
-
 }
 
 //Close the open files or socket
@@ -334,19 +327,14 @@ ssize_t myRead( int des, void* buf, size_t nbyte )
 {
 	// deal with reading from descriptors for files
 
-	if(vectorSocket[des]->isFile())
-	{
-		return read(des, buf, nbyte);
-	}
-	else
+	if(!(vectorSocket[des]->isFile()))
 	{
 		// myRead (for our socketpairs) reads a minimum of 1 byte
 		return myReadcond(des, buf, nbyte, 1, 0, 0);
 	}
+
+	return read(des, buf, nbyte);
 }
-
-
-
 
 
 
