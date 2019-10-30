@@ -147,7 +147,7 @@ public:
 		}
 		return PE(close(des)); // pair == -2
 	} // .closing()
-}; // socketInfoClass
+}; // socketInfoClass./
 
 // get shared pointer for des
 socketInfoClassSp getDesInfoP(int des) {
