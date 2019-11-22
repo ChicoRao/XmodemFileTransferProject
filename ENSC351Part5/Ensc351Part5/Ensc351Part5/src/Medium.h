@@ -10,11 +10,11 @@
 
 //comment out "define USE_PART2A_R1_TO_S2"
 // to use the final terminal 1->2 medium. It can drop chars, glitch, etc.
-#define USE_PART2A_R1_TO_S2
+//#define USE_PART2A_R1_TO_S2
 
 //comment out "define USE_PART2A_S2_TO_R1"
 // to use the final terminal 2->1 medium. It can drop chars, glitch, etc.
-#define USE_PART2A_S2_TO_R1
+//#define USE_PART2A_S2_TO_R1
 
 class Medium {
 public:

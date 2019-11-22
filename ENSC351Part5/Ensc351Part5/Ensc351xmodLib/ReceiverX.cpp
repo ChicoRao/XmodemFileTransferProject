@@ -225,7 +225,7 @@ void ReceiverX::clearCan()
 	//******** fill this function in **************
 	while (true) {
 		//Read and discard
-		int bytesRead = myReadcond(mediumD, &character, 1, 1, TM_2CHAR, TM_2CHAR);
+		int bytesRead = myReadcond(mediumD, &character, 1, 1, dSECS_PER_UNIT*TM_2CHAR, dSECS_PER_UNIT*TM_2CHAR);
 
 
 		if (character != CAN) {
@@ -248,7 +248,7 @@ void ReceiverX::purge()
 
 		while (true) {
 			//Read and discard
-			int bytesRead = myReadcond(mediumD, &character, 1, 1, TM_CHAR, TM_CHAR);
+			int bytesRead = myReadcond(mediumD, &character, 1, 1, dSECS_PER_UNIT*TM_CHAR, dSECS_PER_UNIT*TM_CHAR);
 
 
 			if (bytesRead == 0 || bytesRead == -1) {
