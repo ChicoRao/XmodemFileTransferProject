@@ -219,7 +219,7 @@ void SenderX::clearCan()
 	//******** fill this function in **************
 	while (true) {
 		//Read and discard
-		int bytesRead = myReadcond(mediumD, &character, 1,1, TM_CHAR, TM_CHAR);
+		int bytesRead = myReadcond(mediumD, &character, 1, 1, TM_CHAR, TM_CHAR);
 
 
 		if (character != CAN) {

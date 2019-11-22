@@ -23,7 +23,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -std=c++1y -I"/mnt/hgfs/VMsf/XModemProjects/XmodemFileTransferProject/ENSC351Part5/Ensc351Part5/Ensc351xmodLib" -I"/mnt/hgfs/VMsf/git/ensc351lib/Ensc351" -O0 -g3 -Wall -c -fmessage-length=0 -Wno-unused-variable -Wno-unknown-pragmas -pthread -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++1y -I"/mnt/hgfs/VMsf/githubXmodem/XmodemFileTransferProject/ENSC351Part5/Ensc351Part5/Ensc351xmodLib" -I"/mnt/hgfs/VMsf/git/ensc351lib/Ensc351" -O0 -g3 -Wall -c -fmessage-length=0 -Wno-unused-variable -Wno-unknown-pragmas -pthread -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

@@ -184,13 +184,14 @@ transferCommon(std::shared_ptr<StateMgr> mySM, bool reportInfoParam)
 	fd_set set;
 	FD_ZERO(&set);
 
-	FD_SET(mediumD, &set);
-	FD_SET(consoleInId, &set);
-
 	struct timeval tv;
 
 	while(mySM->isRunning()) {
 		// ************* this loop is going to need more work ************
+
+		FD_SET(mediumD, &set);
+		FD_SET(consoleInId, &set);
+
 		tv.tv_sec=0;
 		uint32_t now = elapsed_usecs();
 		if (now >= absoluteTimeout) {
@@ -232,6 +233,8 @@ transferCommon(std::shared_ptr<StateMgr> mySM, bool reportInfoParam)
 
 			}else {
 				// timeout occurred
+				tv.tv_usec = 0;
+
 				mySM->postEvent(TM);
 			}
 		}
