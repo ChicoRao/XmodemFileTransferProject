@@ -211,12 +211,10 @@ transferCommon(std::shared_ptr<StateMgr> mySM, bool reportInfoParam)
 					//read character from console
 					char byteToReceive[LINEMAX];
 
-					PE_NOT(myRead(consoleInId, &byteToReceive, 1), 1);
-					byteToReceive[strlen(byteToReceive)] = '\0';
+					int bytesRead = myReadcond(consoleInId, &byteToReceive, LINEMAX, 1, 0, 0);
+					byteToReceive[bytesRead] = '\0';
 
-					//char *cancel_C = CANC_C;
-
-					if(strcmp(byteToReceive, CANC_C) == 0) {
+					if(!strcmp(byteToReceive, CANC_C)) {
 						mySM->postEvent(KB_C);
 					}
 				}

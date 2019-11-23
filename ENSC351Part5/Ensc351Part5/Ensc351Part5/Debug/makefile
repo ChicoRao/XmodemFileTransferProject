@@ -41,7 +41,7 @@ endif
 all: Ensc351Part5
 
 dependents:
-	-cd /mnt/hgfs/VMsf/githubXmodem/XmodemFileTransferProject/ENSC351Part5/Ensc351Part5/Ensc351xmodLib/Debug && $(MAKE) all
+	-cd /mnt/hgfs/VMsf/githubXmodem/XmodemFileTransferProject/ENSC351Part5/Ensc351Part5/Ensc351xmodLib/Debug && $(MAKE) clean all
 
 # Tool invocations
 Ensc351Part5: $(OBJS) $(USER_OBJS) /mnt/hgfs/VMsf/githubXmodem/XmodemFileTransferProject/ENSC351Part5/Ensc351Part5/Ensc351xmodLib/Debug/libEnsc351xmodLib.a
